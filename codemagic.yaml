@@ -1,0 +1,55 @@
+# Compilacao inicial e distribuicao Ad Hoc para dispositivos registrados.
+# Nao publica no TestFlight nem na App Store.
+workflows:
+  ios-compile-check:
+    name: MiniWatts | Validacao de compilacao
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      xcode: "27.1"
+    scripts:
+      - name: Verificar ambiente
+        script: |
+          set -eu
+          xcodebuild -version
+          swift --version
+      - name: Compilar sem assinatura
+        script: |
+          set -eu
+          xcodebuild \
+            -project "$CM_BUILD_DIR/MiniWatts.xcodeproj" \
+            -scheme MiniWatts \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+  ios-adhoc:
+    name: MiniWatts | iPhone Ad Hoc
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      xcode: "27.1"
+      ios_signing:
+        distribution_type: ad_hoc
+        bundle_identifier: com.ubereatsoss.miniwatts
+    scripts:
+      - name: Verificar ambiente
+        script: |
+          set -eu
+          xcodebuild -version
+          swift --version
+      - name: Aplicar certificados e perfis do Codemagic
+        script: xcode-project use-profiles
+      - name: Criar IPA assinado
+        script: |
+          set -eu
+          xcode-project build-ipa \
+            --project "$CM_BUILD_DIR/MiniWatts.xcodeproj" \
+            --scheme MiniWatts \
+            --config Release \
+            --archive-xcargs "CURRENT_PROJECT_VERSION=$PROJECT_BUILD_NUMBER"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
