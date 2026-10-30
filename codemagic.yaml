@@ -32,8 +32,8 @@ workflows:
       xcode: "27.1"
       ios_signing:
         provisioning_profiles:
-          - miniwatts_app_certmatch_v2
-          - miniwatts_widget_certmatch_v2
+          - miniwatts_app_adhoc_20261030
+          - miniwatts_widget_adhoc
         certificates:
           - miniwatts_distribution
     scripts:
