@@ -55,7 +55,7 @@ struct BatteryProvider: TimelineProvider {
 // MARK: - Widget
 
 struct BatteryWidget: Widget {
-    let kind = "org.zhaohe.MiniWatts.battery"
+    let kind = "com.ubereatsoss.miniwatts.battery"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: BatteryProvider()) { entry in
