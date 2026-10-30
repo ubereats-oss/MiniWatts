@@ -53,11 +53,19 @@ workflows:
       - name: Criar IPA assinado
         script: |
           set -eu
-          xcode-project build-ipa \
+          if ! xcode-project build-ipa \
             --project "$CM_BUILD_DIR/MiniWatts.xcodeproj" \
             --scheme MiniWatts \
             --config Release \
-            --archive-xcargs "CURRENT_PROJECT_VERSION=$PROJECT_BUILD_NUMBER"
+            --archive-xcargs "CURRENT_PROJECT_VERSION=$PROJECT_BUILD_NUMBER"; then
+            echo "===== ERROS COMPLETOS DO XCODE ====="
+            for log in /tmp/xcodebuild_logs/*.log; do
+              [ -f "$log" ] || continue
+              echo "===== $log ====="
+              grep -nEi 'error:|failed|provisioning profile|code.?sign|entitlements|certificate|ARCHIVE FAILED' "$log" | tail -n 90 || true
+            done
+            exit 1
+          fi
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
