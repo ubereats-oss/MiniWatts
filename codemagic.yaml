@@ -31,16 +31,25 @@ workflows:
     environment:
       xcode: "27.1"
       ios_signing:
-        distribution_type: ad_hoc
-        bundle_identifier: com.ubereatsoss.miniwatts
+        provisioning_profiles:
+          - miniwatts_app_adhoc
+          - miniwatts_widget_adhoc
+        certificates:
+          - miniwatts_distribution
     scripts:
       - name: Verificar ambiente
         script: |
           set -eu
           xcodebuild -version
           swift --version
+      - name: Verificar perfis Ad Hoc e App Groups
+        script: python3 "$CM_BUILD_DIR/scripts/verify-adhoc-profiles.py"
       - name: Aplicar certificados e perfis do Codemagic
-        script: xcode-project use-profiles
+        script: |
+          xcode-project use-profiles \
+            --project "$CM_BUILD_DIR/MiniWatts.xcodeproj" \
+            --archive-method ad-hoc \
+            --code-signing-setup-verbose-logging
       - name: Criar IPA assinado
         script: |
           set -eu
