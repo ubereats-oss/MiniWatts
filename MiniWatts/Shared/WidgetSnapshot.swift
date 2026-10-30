@@ -30,7 +30,7 @@ nonisolated struct WidgetSnapshot: Codable, Hashable {
     var reading: ChargeReading
     var lastSession: Session?
 
-    static let groupIdentifier = "group.org.zhaohe.MiniWatts"
+    static let groupIdentifier = "group.com.ubereatsoss.miniwatts"
     private static let filename = "widget-snapshot.json"
 
     private static var fileURL: URL? {
