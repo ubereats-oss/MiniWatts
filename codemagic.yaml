@@ -1,0 +1,72 @@
+# Compilacao inicial e distribuicao Ad Hoc para dispositivos registrados.
+# Nao publica no TestFlight nem na App Store.
+workflows:
+  ios-compile-check:
+    name: MiniWatts | Validacao de compilacao
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      xcode: "27.1"
+    scripts:
+      - name: Verificar ambiente
+        script: |
+          set -eu
+          xcodebuild -version
+          swift --version
+      - name: Compilar sem assinatura
+        script: |
+          set -eu
+          xcodebuild \
+            -project "$CM_BUILD_DIR/MiniWatts.xcodeproj" \
+            -scheme MiniWatts \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+  ios-adhoc:
+    name: MiniWatts | iPhone Ad Hoc
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      xcode: "27.1"
+      ios_signing:
+        provisioning_profiles:
+          - miniwatts_app_adhoc_20261030
+          - miniwatts_widget_adhoc
+        certificates:
+          - miniwatts_distribution
+    scripts:
+      - name: Verificar ambiente
+        script: |
+          set -eu
+          xcodebuild -version
+          swift --version
+      - name: Verificar perfis Ad Hoc e App Groups
+        script: python3 "$CM_BUILD_DIR/scripts/verify-adhoc-profiles.py"
+      - name: Aplicar certificados e perfis do Codemagic
+        script: |
+          xcode-project use-profiles \
+            --project "$CM_BUILD_DIR/MiniWatts.xcodeproj" \
+            --archive-method ad-hoc \
+            --code-signing-setup-verbose-logging
+      - name: Criar IPA assinado
+        script: |
+          set -eu
+          if ! xcode-project build-ipa \
+            --project "$CM_BUILD_DIR/MiniWatts.xcodeproj" \
+            --scheme MiniWatts \
+            --config Release \
+            --archive-xcargs "CURRENT_PROJECT_VERSION=$PROJECT_BUILD_NUMBER"; then
+            echo "===== ERROS COMPLETOS DO XCODE ====="
+            for log in /tmp/xcodebuild_logs/*.log; do
+              [ -f "$log" ] || continue
+              echo "===== $log ====="
+              grep -nEi 'error:|failed|provisioning profile|code.?sign|entitlements|certificate|ARCHIVE FAILED' "$log" | tail -n 90 || true
+            done
+            exit 1
+          fi
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
